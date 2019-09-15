@@ -1,5 +1,14 @@
 <script>
-function isLineBreak(phrases) {
+"use strict";
+// ------------------------------------
+// Utilsクラス
+// -----------------
+// コンストラクタ 
+function Utils() { 
+    // 直接呼び出し対策. ES6の class では自動で入る. 
+    if (this === undefined) throw new TypeError();
+}
+Utils.isLineBreak = function(phrases) {
     for (var i = 0; i < phrases.length; i++) {
        if("改行" == phrases[i]) {
           return true;
@@ -16,7 +25,7 @@ function isLineBreak(phrases) {
     }
     return false;
 }
-function isPhrasesPunctuation(phrases) {
+Utils.isPhrasesPunctuation = function(phrases) {
     for (var i = 0; i < phrases.length; i++) {
        if("まる" == phrases[i]) {
           return true;
@@ -33,7 +42,7 @@ function isPhrasesPunctuation(phrases) {
     }
     return false;
 }
-function isPhrasesReading(phrases) {
+Utils.isPhrasesReading = function(phrases) {
     for (var i = 0; i < phrases.length; i++) {
        if("10" == phrases[i]) {
           return true;
@@ -53,158 +62,13 @@ function isPhrasesReading(phrases) {
     }
     return false;
 }
-if (!annyang) {
-    $('.no-browser-support').show();
-    $('.app').hide();
-} else {
-    annyang.debug(true);
-    annyang.setLanguage('ja-JP');
-    var noteTextarea = $('#note-textarea');
-    var notesList = $('ul#notes');
-    var noteContent = '';
-    var notes = getAllNotes();
-    renderNotes(notes);
-    annyang.addCallback('result', function(phrases) {
-        if (isPhrasesReading(phrases)) {
-            noteContent += "、";   
-        } else if (isPhrasesPunctuation(phrases)) {
-            noteContent += "。";           
-        } else if (isLineBreak(phrases)) {
-            noteContent += "\r\n";           
-        } else {
-            noteContent += phrases[0];
-        }
-        noteTextarea.val(noteContent);
-        noteTextarea.focus();
-        noteTextarea.setSelectionRange(noteTextarea.value.length, noteTextarea.value.length);
-    });
-    annyang.addCallback('start', function() {
-        // Do Nothing...
-    });
-    annyang.addCallback('end', function() {
-        // Do Nothing...    
-    });                
-    annyang.addCallback('error', function(event) {
-        if(event.error == 'no-speech') {
-        // Do Nothing...    
-        };
-    });
-    /*-----------------------------
-        App buttons and input 
-    ------------------------------*/
-    // Sync the text inside the text area with the noteContent variable.
-    noteTextarea.on('input', function() {
-        noteContent = $(this).val();
-    });
-
-    $('#save-note-btn').on('click', function(e) {
-        annyang.abort();
-        if(!noteContent.length) {
-            // Do Nothing...    
-        } else {
-            // Save note to localStorage.
-            // The key is the dateTime with seconds, the value is the content of the note.
-            saveNote(new Date().toLocaleString(), noteContent);
-
-            // Reset variables and update UI.
-            noteContent = '';
-            renderNotes(getAllNotes());
-            noteTextarea.val('');
-            // Do Nothing...    
-        }  
-    });
-    
-    $('#export-note-btn').on('click', function(e) {
-        if($(".note").length > 0) {
-            var ret = window.prompt('ドキュメント名を入力してください。');
-            if(!ret) {
-                return false;
-            }
-            var data = new Object();
-            var contents = new Array();
-            var notes = $(".note");
-            for (var i = 0; i < notes.length; i++) {
-                var note = notes[i];
-                var elem = new Object();
-                elem.heading = $(".header .date", note).text();
-                elem.content = $(note).children(".content").text();
-                contents.push(elem);
-            }
-            data.documentName = ret;
-            data.notes = contents;
-            google.script.run.withSuccessHandler(noticeSuccess).exportToGoogleDocument(data);            
-        }
-    });
-    
-    notesList.on('click', function(e) {
-        e.preventDefault();
-        var target = $(e.target);
-
-        // Listen to the selected note.
-        if(target.hasClass('listen-note')) {
-            var content = target.closest('.note').find('.content').text();
-            readOutLoud(content);
-        }
-
-        // Delete note.
-        if(target.hasClass('delete-note')) {
-            var dateTime = target.siblings('.date').text();  
-            deleteNote(dateTime);
-            target.closest('.note').remove();
-        }
-    });
-    // Tell KITT to use annyang
-    SpeechKITT.annyang();
-    SpeechKITT.setToggleLabelText('録音する');
-    SpeechKITT.setInstructionsText('録音中しています...');
-    // Define a stylesheet for KITT to use
-    SpeechKITT.setStylesheet('//cdnjs.cloudflare.com/ajax/libs/SpeechKITT/1.0.0/themes/flat-concrete.css');
-    // Render KITT's interface
-    SpeechKITT.vroom();
+function Storage() { 
+    if (this === undefined) throw new TypeError();
 }
-/*-----------------------------
-    Speech Synthesis 
-------------------------------*/
-function noticeSuccess(url) {
-    window.alert('エクスポートが完了しました。 url [' + url + ']');
+Storage.deleteNote = function(dateTime) {
+    localStorage.removeItem('note-' + dateTime); 
 }
-function readOutLoud(message) {
-    var speech = new SpeechSynthesisUtterance();
-
-// Set the text and voice attributes.
-    speech.text = message;
-    speech.volume = 1;
-    speech.rate = 1;
-    speech.pitch = 1;  
-    window.speechSynthesis.speak(speech);
-}
-
-/*-----------------------------
-    Helper Functions 
-------------------------------*/
-function renderNotes(notes) {
-    var html = '';
-    if(notes.length) {
-        notes.forEach(function(note) {
-        html+= `<li class="note">
-            <p class="header">
-            <span class="date">${note.date}</span>
-            <a href="#" class="listen-note" title="Listen to Note">Listen to Note</a>
-            <a href="#" class="delete-note" title="Delete">Delete</a>
-            </p>
-            <p class="content">${note.content}</p>
-        </li>`;    
-        });
-    }
-    else {
-        html = '<li><p class="content">You don\'t have any notes yet.</p></li>';
-    }
-    notesList.html(html);
-}
-function saveNote(dateTime, content) {
-    localStorage.setItem('note-' + dateTime, content);
-}
-function getAllNotes() {
+Storage.getAllNotes = function() {
     var notes = [];
     var key;
     for (var i = 0; i < localStorage.length; i++) {
@@ -219,7 +83,184 @@ function getAllNotes() {
     }
     return notes;
 }
-function deleteNote(dateTime) {
-    localStorage.removeItem('note-' + dateTime); 
+Storage.saveNote = function(dateTime, content) {
+    localStorage.setItem('note-' + dateTime, content);
 }
+// コンストラクタ 
+function IndexView($element) {
+    if (this === undefined) throw new TypeError(); 
+    this.$element        = $element;
+    this.$noteTextarea   = $element.find('#note-textarea');
+    this.$notesList      = $element.find('ul#notes');
+    this.$saveNoteBtn    = $element.find('#save-note-btn');
+    this.$exportNoteBtn  = $element.find('#export-note-btn');
+    this.$note           = $element.find(".note");
+    this.$notesList.on('click', function(e) {
+        e.preventDefault();
+        var target = $(e.target);
+        // Listen to the selected note.
+        if(target.hasClass('listen-note')) {
+            var content = target.closest('.note').find('.content').text();
+            var speech = new SpeechSynthesisUtterance();
+            // Set the text and voice attributes.
+            speech.text = message;
+            speech.volume = 1;
+            speech.rate = 1;
+            speech.pitch = 1;  
+            window.speechSynthesis.speak(speech);
+        }
+        // Delete note.
+        if(target.hasClass('delete-note')) {
+            var dateTime = target.siblings('.date').text();  
+            Storage.deleteNote(dateTime);
+            target.closest('.note').remove();
+        }
+    });
+    this.$saveNoteBtn.on('click', function(e) {
+        $(this).triggerHandler('saveNoteContentToStorage');
+    });
+    /*-----------------------------
+        App buttons and input 
+    ------------------------------*/
+    // Sync the text inside the text area with the noteContent variable.
+    this.$noteTextarea.on('input', function() {
+        $(this).triggerHandler('saveNoteContent', $(this).val());
+    });
+    this.$exportNoteBtn.on('click', function(e) {
+        var notes = this.$note;
+        $(this).triggerHandler('exportNotes', notes);        
+    });
+}
+// メソッドを定義する 
+IndexView.prototype = { 
+    constructor: IndexView,
+    renderNotes: function(notes) { 
+        var html = '';
+        if(notes.length) {
+            notes.forEach(function(note) {
+            html+= `<li class="note">
+                <p class="header">
+                <span class="date">${note.date}</span>
+                <a href="#" class="listen-note" title="Listen to Note">Listen to Note</a>
+                <a href="#" class="delete-note" title="Delete">Delete</a>
+                </p>
+                <p class="content">${note.content}</p>
+                </li>`;    
+            });
+        } else {
+        html = '<li><p class="content">You don\'t have any notes yet.</p></li>';
+        }
+        this.$notesList.html(html);
+        this.$note = this.$element.find(".note");
+    },
+    setNoteText : function(value) { 
+        var elem = this.$noteTextarea;
+        elem.val(value);
+        elem.focus();
+        elem.setSelectionRange(elem.value.length, elem.value.length);
+    }
+};
+// コンストラクタ 
+function IndexController($element) {
+    if (this === undefined) throw new TypeError();
+    this.$element = $element;
+    this.view = new IndexView($element);
+    this.noteContent = "";
+    $(this.view).on('saveNoteContent', this.saveNoteContent);
+    $(this.view).on('saveNoteContentToStorage', this.saveNoteContentToStorage);
+    $(this.view).on('exportNotes', this.exportNotes.bind(this));
+}
+// メソッドを定義する 
+IndexController.prototype = { 
+    constructor: IndexController,
+    saveNoteContent = function(val) {
+        this.noteContent = val;
+    },
+    saveNoteContentToStorage = function() {
+        if(!this.noteContent.length) {
+            // Do Nothing...    
+        } else {
+            // Save note to localStorage.
+            // The key is the dateTime with seconds, the value is the content of the note.
+            Storage.saveNote(new Date().toLocaleString(), this.noteContent);
+            // Reset variables and update UI.
+            this.noteContent = '';
+            this.view.renderNotes(Storage.getAllNotes());
+            this.view.setNoteText('');
+        } 
+    },
+    noticeSuccess(url) {
+        window.alert('エクスポートが完了しました。 url [' + url + ']');        
+        var dates = $('.date');
+        for (var i = 0; i < dates.length; i++) {
+            Storage.deleteNote(dates[i].text());
+        }
+        this.view.renderNotes(Storage.getAllNotes());
+    },
+    exportNotes = function(notes) {
+        if(notes > 0) {
+            var ret = window.prompt('ドキュメント名を入力してください。');
+            if(!ret) {
+                return false;
+            }
+            var data = new Object();
+            var contents = new Array();
+            for (var i = 0; i < notes.length; i++) {
+                var note = notes[i];
+                var elem = new Object();
+                elem.heading = $(".header .date", note).text();
+                elem.content = $(note).children(".content").text();
+                contents.push(elem);
+            }
+            data.documentName = ret;
+            data.notes = contents;
+            google.script.run.withSuccessHandler(noticeSuccess).exportToGoogleDocument(data);            
+        }
+    },
+    initPage: function() {
+        if (!annyang) {
+            this.$element.find('.no-browser-support').show();
+            this.$element.find('.app').hide();
+            return;
+        }
+        annyang.setLanguage('ja-JP');
+        var notes = Storage.getAllNotes();
+        view.renderNotes(notes);
+        annyang.addCallback('result', function(phrases) {
+            if (Utils.isPhrasesReading(phrases)) {
+                noteContent += "、";   
+            } else if (Utils.isPhrasesPunctuation(phrases)) {
+                noteContent += "。";           
+            } else if (Utils.isLineBreak(phrases)) {
+                noteContent += "\r\n";           
+            } else {
+                noteContent += phrases[0];
+            }
+            this.view.setNoteText(noteContent);
+        });
+        annyang.addCallback('start', function() {
+        // Do Nothing...
+        });
+        annyang.addCallback('end', function() {
+            // Do Nothing...    
+        });                
+        annyang.addCallback('error', function(event) {
+            if(event.error == 'no-speech') {
+            // Do Nothing...    
+            };
+        });
+        // Tell KITT to use annyang
+        SpeechKITT.annyang();
+        SpeechKITT.setToggleLabelText('録音する');
+        SpeechKITT.setInstructionsText('録音中しています...');
+        // Define a stylesheet for KITT to use
+        SpeechKITT.setStylesheet('//cdnjs.cloudflare.com/ajax/libs/SpeechKITT/1.0.0/themes/flat-concrete.css');
+        // Render KITT's interface
+        SpeechKITT.vroom();
+    }
+};
+$(function(){
+    var controller = new IndexController($(document));
+    controller.initPage();
+});
 </script>
