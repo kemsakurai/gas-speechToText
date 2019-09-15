@@ -94,6 +94,7 @@ function IndexView($element) {
     this.$saveNoteBtn    = $element.find('#save-note-btn');
     this.$exportNoteBtn  = $element.find('#export-note-btn');
     this.$note           = $element.find(".note");
+    var self = this;
     this.$notesList.on('click', function(e) {
         e.preventDefault();
         var target = $(e.target);
@@ -116,18 +117,19 @@ function IndexView($element) {
         }
     });
     this.$saveNoteBtn.on('click', function(e) {
-        $(this).triggerHandler('saveNoteContentToStorage');
+        $(self).triggerHandler('saveNoteContentToStorage');
     });
     /*-----------------------------
         App buttons and input 
     ------------------------------*/
     // Sync the text inside the text area with the noteContent variable.
     this.$noteTextarea.on('input', function() {
-        $(this).triggerHandler('saveNoteContent', $(this).val());
+        console.log(self.$noteTextarea.val());
+        $(self).triggerHandler('saveNoteContent', self.$noteTextarea.val());
     });
     this.$exportNoteBtn.on('click', function(e) {
-        var notes = this.$note;
-        $(this).triggerHandler('exportNotes', notes);        
+        var notes = self.$note;
+        $(self).triggerHandler('exportNotes', notes);        
     });
 }
 // メソッドを定義する 
@@ -156,7 +158,7 @@ IndexView.prototype = {
         var elem = this.$noteTextarea;
         elem.val(value);
         elem.focus();
-        elem.setSelectionRange(elem.value.length, elem.value.length);
+        elem[0].setSelectionRange(elem.val().length, elem.val().length);
     }
 };
 // コンストラクタ 
@@ -165,15 +167,17 @@ function IndexController($element) {
     this.$element = $element;
     this.view = new IndexView($element);
     this.noteContent = "";
-    $(this.view).on('saveNoteContent', this.saveNoteContent);
-    $(this.view).on('saveNoteContentToStorage', this.saveNoteContentToStorage);
+    $(this.view).on('saveNoteContent', this.saveNoteContent.bind(this));
+    $(this.view).on('saveNoteContentToStorage', this.saveNoteContentToStorage.bind(this));
     $(this.view).on('exportNotes', this.exportNotes.bind(this));
 }
+
 // メソッドを定義する 
 IndexController.prototype = { 
     constructor: IndexController,
-    saveNoteContent = function(val) {
+    saveNoteContent : function(val) {
         this.noteContent = val;
+        console.log("this.noteContent", this.noteContent);
     },
     saveNoteContentToStorage : function() {
         if(!this.noteContent.length) {
@@ -217,25 +221,26 @@ IndexController.prototype = {
         }
     },
     initPage: function() {
+        var self = this;
         if (!annyang) {
-            this.$element.find('.no-browser-support').show();
-            this.$element.find('.app').hide();
+            self.$element.find('.no-browser-support').show();
+            self.$element.find('.app').hide();
             return;
         }
         annyang.setLanguage('ja-JP');
         var notes = Storage.getAllNotes();
-        view.renderNotes(notes);
+        self.view.renderNotes(notes);
         annyang.addCallback('result', function(phrases) {
             if (Utils.isPhrasesReading(phrases)) {
-                noteContent += "、";   
+                self.noteContent += "、";   
             } else if (Utils.isPhrasesPunctuation(phrases)) {
-                noteContent += "。";           
+                self.noteContent += "。";           
             } else if (Utils.isLineBreak(phrases)) {
-                noteContent += "\r\n";           
+                self.noteContent += "\r\n";           
             } else {
-                noteContent += phrases[0];
+                self.noteContent += phrases[0];
             }
-            this.view.setNoteText(noteContent);
+            self.view.setNoteText(self.noteContent);
         });
         annyang.addCallback('start', function() {
         // Do Nothing...
@@ -259,7 +264,7 @@ IndexController.prototype = {
     }
 };
 $(function(){
-    var controller = new IndexController($(document));
+    var controller = new IndexController($(document.body));
     controller.initPage();
 });
 </script>
