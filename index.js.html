@@ -5,7 +5,6 @@
 // -----------------
 // コンストラクタ 
 function Utils() { 
-    // 直接呼び出し対策. ES6の class では自動で入る. 
     if (this === undefined) throw new TypeError();
 }
 Utils.isLineBreak = function(phrases) {
@@ -176,7 +175,7 @@ IndexController.prototype = {
     saveNoteContent = function(val) {
         this.noteContent = val;
     },
-    saveNoteContentToStorage = function() {
+    saveNoteContentToStorage : function() {
         if(!this.noteContent.length) {
             // Do Nothing...    
         } else {
@@ -189,7 +188,7 @@ IndexController.prototype = {
             this.view.setNoteText('');
         } 
     },
-    noticeSuccess(url) {
+    noticeSuccess : function(url) {
         window.alert('エクスポートが完了しました。 url [' + url + ']');        
         var dates = $('.date');
         for (var i = 0; i < dates.length; i++) {
@@ -197,7 +196,7 @@ IndexController.prototype = {
         }
         this.view.renderNotes(Storage.getAllNotes());
     },
-    exportNotes = function(notes) {
+    exportNotes : function(notes) {
         if(notes > 0) {
             var ret = window.prompt('ドキュメント名を入力してください。');
             if(!ret) {
