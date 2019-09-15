@@ -117,19 +117,18 @@ function IndexView($element) {
         }
     });
     this.$saveNoteBtn.on('click', function(e) {
-        $(self).triggerHandler('saveNoteContentToStorage');
+        $(self).triggerHandler('saveNoteContentToStorage', []);
     });
     /*-----------------------------
         App buttons and input 
     ------------------------------*/
     // Sync the text inside the text area with the noteContent variable.
     this.$noteTextarea.on('input', function() {
-        console.log(self.$noteTextarea.val());
-        $(self).triggerHandler('saveNoteContent', self.$noteTextarea.val());
+        $(self).triggerHandler('saveNoteContent', [self.$noteTextarea.val()]);
     });
     this.$exportNoteBtn.on('click', function(e) {
         var notes = self.$note;
-        $(self).triggerHandler('exportNotes', notes);        
+        $(self).triggerHandler('exportNotes', [notes]);        
     });
 }
 // メソッドを定義する 
@@ -175,11 +174,10 @@ function IndexController($element) {
 // メソッドを定義する 
 IndexController.prototype = { 
     constructor: IndexController,
-    saveNoteContent : function(val) {
+    saveNoteContent : function(event, val) {
         this.noteContent = val;
-        console.log("this.noteContent", this.noteContent);
     },
-    saveNoteContentToStorage : function() {
+    saveNoteContentToStorage : function(event) {
         if(!this.noteContent.length) {
             // Do Nothing...    
         } else {
@@ -196,12 +194,12 @@ IndexController.prototype = {
         window.alert('エクスポートが完了しました。 url [' + url + ']');        
         var dates = $('.date');
         for (var i = 0; i < dates.length; i++) {
-            Storage.deleteNote(dates[i].text());
+            Storage.deleteNote(dates[i].innerText);
         }
         this.view.renderNotes(Storage.getAllNotes());
     },
-    exportNotes : function(notes) {
-        if(notes > 0) {
+    exportNotes : function(event, notes) {
+        if(notes.length > 0) {
             var ret = window.prompt('ドキュメント名を入力してください。');
             if(!ret) {
                 return false;
@@ -217,7 +215,7 @@ IndexController.prototype = {
             }
             data.documentName = ret;
             data.notes = contents;
-            google.script.run.withSuccessHandler(noticeSuccess).exportToGoogleDocument(data);            
+            google.script.run.withSuccessHandler(this.noticeSuccess.bind(this)).exportToGoogleDocument(data);
         }
     },
     initPage: function() {
