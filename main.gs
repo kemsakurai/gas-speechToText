@@ -1,6 +1,8 @@
 function doGet() {
-  var template = HtmlService.createTemplateFromFile('index.html');
-  return template.evaluate().setSandboxMode(HtmlService.SandboxMode.IFRAME);
+  var template = HtmlService.createTemplateFromFile('index.html').evaluate();
+  template.setSandboxMode(HtmlService.SandboxMode.IFRAME);
+  template.setTitle('Speech to text');
+  return template;
 }
 
 function include(filename) {
@@ -24,3 +26,4 @@ function exportToGoogleDocument(data) {
   var documentUrl = document.getUrl();
   return documentUrl;
 }
+s
