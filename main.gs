@@ -2,6 +2,7 @@ function doGet() {
   var template = HtmlService.createTemplateFromFile('index.html').evaluate();
   template.setSandboxMode(HtmlService.SandboxMode.IFRAME);
   template.setTitle('Speech to text');
+  template.addMetaTag('viewport', "width=device-width, initial-scale=1");
   return template;
 }
 
