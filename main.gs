@@ -26,4 +26,3 @@ function exportToGoogleDocument(data) {
   var documentUrl = document.getUrl();
   return documentUrl;
 }
-s
